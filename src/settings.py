@@ -13,6 +13,11 @@ class Settings(BaseSettings):
     embedding_model: str = Field(default="text-embedding-3-small", env="EMBEDDING_MODEL")
     chat_model: str = Field(default="gpt-4o-mini", env="CHAT_MODEL")
     
+    # Gemini Configuration
+    gemini_api_key: str = Field(..., env="GEMINI_API_KEY")
+    gemini_chat_model: str = Field(default="gemini-1.5-flash", env="GEMINI_CHAT_MODEL")
+    gemini_embedding_model: str = Field(default="models/text-embedding-004", env="GEMINI_EMBEDDING_MODEL")
+    
     # Vector Store Configuration
     vector_store: Literal["faiss", "chroma"] = Field(default="faiss", env="VECTOR_STORE")
     index_dir: str = Field(default="./storage", env="INDEX_DIR")

@@ -1,13 +1,14 @@
 # DocuChat - PDF Q&A with RAG
 
-A modern web application that enables users to upload PDF documents and ask natural language questions about their content. Built with Retrieval-Augmented Generation (RAG) technology for accurate, context-aware responses.
+A modern web application that enables users to upload PDF documents and ask natural language questions about their content. Built with Retrieval-Augmented Generation (RAG) technology for accurate, context-aware responses with multi-tier AI fallback system.
 
 ## Features
 
 - **PDF Document Upload**: Support for PDF file processing with validation
 - **Intelligent Text Processing**: Advanced text extraction and chunking for optimal retrieval
 - **Semantic Search**: Vector-based similarity search using FAISS or ChromaDB
-- **AI-Powered Answers**: OpenAI GPT models provide accurate, contextual responses
+- **Multi-Tier AI System**: Google Gemini (primary) with OpenAI GPT fallback for robust responses
+- **Intelligent Fallback**: Automatic failover between Gemini → OpenAI Direct → OpenAI SDK → Mock
 - **Source Attribution**: All answers include references to relevant document sections
 - **Interactive Web Interface**: Modern Streamlit-based UI with real-time feedback
 - **Chat History**: Persistent conversation history with timestamps
@@ -23,11 +24,29 @@ PDF Upload → Text Extraction → Chunking → Embeddings → Vector Storage
 User Query → Embedding → Similarity Search → Context Retrieval → Answer Generation
 ```
 
+### AI Fallback System
+
+The application implements a robust multi-tier fallback system for maximum reliability:
+
+```
+1. Google Gemini (Primary)
+   ↓ (if fails)
+2. OpenAI Direct API
+   ↓ (if fails)
+3. OpenAI SDK Client
+   ↓ (if fails)
+4. Mock Response (for testing)
+```
+
+This ensures the application continues to function even if individual AI services experience issues.
+
 ### Technology Stack
 
 - **Backend**: Python 3.10+
-- **AI Models**: OpenAI GPT-4o-mini (chat), text-embedding-3-small (embeddings)
-- **Vector Storage**: FAISS (default) or ChromaDB
+- **AI Models**:
+  - **Primary**: Google Gemini 1.5 Flash (chat), text-embedding-004 (embeddings)
+  - **Fallback**: OpenAI GPT-4o-mini (chat), text-embedding-3-small (embeddings)
+- **Vector Storage**: FAISS (default) or ChromaDB with automatic dimension detection
 - **PDF Processing**: pypdf
 - **Web Interface**: Streamlit
 - **Configuration**: Pydantic settings with environment variable support
@@ -37,7 +56,8 @@ User Query → Embedding → Similarity Search → Context Retrieval → Answer 
 ### Prerequisites
 
 - Python 3.10 or higher
-- OpenAI API key
+- Google Gemini API key (primary)
+- OpenAI API key (fallback)
 
 ### Setup
 
@@ -63,14 +83,33 @@ User Query → Embedding → Similarity Search → Context Retrieval → Answer 
 
 4. **Configure environment**
 
+   Create a `.env` file in the project root:
+
    ```bash
-   cp .env.example .env
+   touch .env
    ```
 
-   Edit `.env` and add your OpenAI API key:
+   Edit `.env` and add your API keys:
 
-   ```
+   ```env
+   # Primary AI Service (Google Gemini)
+   GEMINI_API_KEY=your_gemini_api_key_here
+   GEMINI_CHAT_MODEL=gemini-1.5-flash
+   GEMINI_EMBEDDING_MODEL=models/text-embedding-004
+
+   # Fallback AI Service (OpenAI)
    OPENAI_API_KEY=your_openai_api_key_here
+   EMBEDDING_MODEL=text-embedding-3-small
+   CHAT_MODEL=gpt-4o-mini
+
+   # System Configuration
+   VECTOR_STORE=faiss
+   INDEX_DIR=./storage
+   CHUNK_SIZE=1200
+   CHUNK_OVERLAP=200
+   TOP_K=4
+   MAX_TOKENS_ANSWER=600
+   TEMPERATURE=0.2
    ```
 
 ## Usage
@@ -97,18 +136,28 @@ The application will be available at `http://localhost:8501`
 
 The application can be configured through environment variables:
 
-| Variable            | Default                | Description                          |
-| ------------------- | ---------------------- | ------------------------------------ |
-| `OPENAI_API_KEY`    | -                      | OpenAI API key (required)            |
-| `EMBEDDING_MODEL`   | text-embedding-3-small | OpenAI embedding model               |
-| `CHAT_MODEL`        | gpt-4o-mini            | OpenAI chat model                    |
-| `VECTOR_STORE`      | faiss                  | Vector store backend (faiss/chroma)  |
-| `INDEX_DIR`         | ./storage              | Directory for storing vector indices |
-| `CHUNK_SIZE`        | 1200                   | Text chunk size in characters        |
-| `CHUNK_OVERLAP`     | 200                    | Overlap between chunks               |
-| `TOP_K`             | 4                      | Number of chunks to retrieve         |
-| `MAX_TOKENS_ANSWER` | 600                    | Maximum tokens for answers           |
-| `TEMPERATURE`       | 0.2                    | Model temperature for responses      |
+### AI Service Configuration
+
+| Variable                 | Default                   | Description                            |
+| ------------------------ | ------------------------- | -------------------------------------- |
+| `GEMINI_API_KEY`         | -                         | Google Gemini API key (required)       |
+| `GEMINI_CHAT_MODEL`      | gemini-1.5-flash          | Gemini chat model                      |
+| `GEMINI_EMBEDDING_MODEL` | models/text-embedding-004 | Gemini embedding model                 |
+| `OPENAI_API_KEY`         | -                         | OpenAI API key (required for fallback) |
+| `EMBEDDING_MODEL`        | text-embedding-3-small    | OpenAI embedding model                 |
+| `CHAT_MODEL`             | gpt-4o-mini               | OpenAI chat model                      |
+
+### System Configuration
+
+| Variable            | Default   | Description                          |
+| ------------------- | --------- | ------------------------------------ |
+| `VECTOR_STORE`      | faiss     | Vector store backend (faiss/chroma)  |
+| `INDEX_DIR`         | ./storage | Directory for storing vector indices |
+| `CHUNK_SIZE`        | 1200      | Text chunk size in characters        |
+| `CHUNK_OVERLAP`     | 200       | Overlap between chunks               |
+| `TOP_K`             | 4         | Number of chunks to retrieve         |
+| `MAX_TOKENS_ANSWER` | 600       | Maximum tokens for answers           |
+| `TEMPERATURE`       | 0.2       | Model temperature for responses      |
 
 ## Project Structure
 
@@ -116,7 +165,7 @@ The application can be configured through environment variables:
 DocuChat/
 ├── README.md                 # Project documentation
 ├── requirements.txt          # Python dependencies
-├── .env.example             # Environment template
+├── .env                     # Environment configuration
 ├── run_app.py               # Application entry point
 ├── TODO.md                  # Development roadmap
 ├── data/                    # Sample documents
@@ -127,7 +176,9 @@ DocuChat/
     ├── app_streamlit.py     # Streamlit web interface
     ├── settings.py          # Configuration management
     ├── types.py            # Data structures
-    ├── llm.py              # OpenAI API integration
+    ├── llm.py              # Multi-tier AI integration with fallback
+    ├── llm_gemini.py       # Google Gemini API integration
+    ├── llm_direct.py       # Direct OpenAI API integration
     ├── llm_mock.py         # Mock implementation for testing
     ├── pdf_utils.py        # PDF processing utilities
     ├── vectorstore.py      # Vector storage abstraction
@@ -193,9 +244,10 @@ response = answer_query("What is this document about?")
 
 **API Key Issues**
 
-- Verify OpenAI API key is correctly set in `.env`
-- Check API key has sufficient credits
+- Verify both Gemini and OpenAI API keys are correctly set in `.env`
+- Check API keys have sufficient credits/quota
 - Ensure no extra spaces in the environment file
+- Test individual API services to isolate issues
 
 **PDF Processing Errors**
 
@@ -223,7 +275,8 @@ This project is available under the MIT License. See LICENSE file for details.
 
 ## Acknowledgments
 
-- OpenAI for providing the GPT and embedding models
+- Google for providing the Gemini AI platform and APIs
+- OpenAI for providing the GPT and embedding models as fallback
 - FAISS team for the efficient vector search library
 - Streamlit for the excellent web framework
 - pypdf contributors for PDF processing capabilities
