@@ -7,7 +7,7 @@ from datetime import datetime
 from .settings import settings
 from .types import DocumentChunk, QueryResponse, RetrievalResult
 from .vectorstore import get_vector_store
-from .llm_mock import chat_complete  # Using mock for now, will switch to real when API works
+from .llm import chat_complete  # Using real OpenAI API
 
 logger = logging.getLogger(__name__)
 

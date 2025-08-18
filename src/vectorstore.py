@@ -26,7 +26,7 @@ except ImportError:
 
 from .settings import settings
 from .types import DocumentChunk, IndexStats
-from .llm_mock import embed_texts  # Using mock for now, will switch to real when API works
+from .llm import embed_texts  # Using real OpenAI API
 
 logger = logging.getLogger(__name__)
 

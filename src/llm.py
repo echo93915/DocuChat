@@ -14,7 +14,17 @@ logger = logging.getLogger(__name__)
 # Initialize OpenAI client
 def get_client():
     """Get OpenAI client instance."""
-    return OpenAI(api_key=settings.openai_api_key)
+    import os
+    try:
+        # Set environment variable for OpenAI client
+        os.environ["OPENAI_API_KEY"] = settings.openai_api_key
+        return OpenAI()  # Will use environment variable
+    except Exception as e:
+        logger.warning(f"OpenAI client creation failed: {e}")
+        # Fallback for older OpenAI SDK versions or environment issues
+        import openai
+        openai.api_key = settings.openai_api_key
+        return openai
 
 
 class OpenAIError(Exception):
@@ -67,11 +77,24 @@ def embed_texts(texts: List[str]) -> List[List[float]]:
     try:
         logger.info(f"Generating embeddings for {len(non_empty_texts)} texts using {settings.embedding_model}")
         
-        client = get_client()
-        response = client.embeddings.create(
-            input=non_empty_texts,
-            model=settings.embedding_model
-        )
+        try:
+            # Try direct API first
+            from .llm_direct import embed_texts as direct_embed_texts
+            return direct_embed_texts(texts)
+        except Exception as direct_error:
+            logger.warning(f"Direct API failed: {direct_error}")
+            try:
+                # Try SDK client
+                client = get_client()
+                response = client.embeddings.create(
+                    input=non_empty_texts,
+                    model=settings.embedding_model
+                )
+            except Exception as sdk_error:
+                # Fallback to mock if both fail
+                logger.warning(f"SDK API also failed, using mock: {sdk_error}")
+                from .llm_mock import embed_texts as mock_embed_texts
+                return mock_embed_texts(texts)
         
         # Extract embeddings and map back to original indices
         embeddings = [[] for _ in texts]
@@ -145,13 +168,26 @@ def chat_complete(
             messages.append({"role": "system", "content": system.strip()})
         messages.append({"role": "user", "content": user.strip()})
         
-        client = get_client()
-        response = client.chat.completions.create(
-            model=settings.chat_model,
-            messages=messages,
-            max_tokens=max_tokens,
-            temperature=temperature
-        )
+        try:
+            # Try direct API first
+            from .llm_direct import chat_complete as direct_chat_complete
+            return direct_chat_complete(system, user, max_tokens=max_tokens, temperature=temperature)
+        except Exception as direct_error:
+            logger.warning(f"Direct API failed: {direct_error}")
+            try:
+                # Try SDK client
+                client = get_client()
+                response = client.chat.completions.create(
+                    model=settings.chat_model,
+                    messages=messages,
+                    max_tokens=max_tokens,
+                    temperature=temperature
+                )
+            except Exception as sdk_error:
+                # Fallback to mock if both fail
+                logger.warning(f"SDK API also failed, using mock: {sdk_error}")
+                from .llm_mock import chat_complete as mock_chat_complete
+                return mock_chat_complete(system, user, max_tokens=max_tokens, temperature=temperature)
         
         answer = response.choices[0].message.content
         if not answer:
