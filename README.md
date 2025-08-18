@@ -16,6 +16,7 @@ A modern web application that enables users to upload PDF documents and ask natu
 ## Architecture
 
 ### RAG Pipeline
+
 ```
 PDF Upload → Text Extraction → Chunking → Embeddings → Vector Storage
      ↓
@@ -41,28 +42,33 @@ User Query → Embedding → Similarity Search → Context Retrieval → Answer 
 ### Setup
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/echo93915/DocuChat.git
    cd DocuChat
    ```
 
 2. **Create and activate virtual environment**
+
    ```bash
    python -m venv .venv
    source .venv/bin/activate  # On Windows: .venv\Scripts\activate
    ```
 
 3. **Install dependencies**
+
    ```bash
    pip install -r requirements.txt
    ```
 
 4. **Configure environment**
+
    ```bash
    cp .env.example .env
    ```
-   
+
    Edit `.env` and add your OpenAI API key:
+
    ```
    OPENAI_API_KEY=your_openai_api_key_here
    ```
@@ -72,6 +78,7 @@ User Query → Embedding → Similarity Search → Context Retrieval → Answer 
 ### Running the Application
 
 Start the Streamlit web interface:
+
 ```bash
 streamlit run run_app.py
 ```
@@ -90,18 +97,18 @@ The application will be available at `http://localhost:8501`
 
 The application can be configured through environment variables:
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `OPENAI_API_KEY` | - | OpenAI API key (required) |
-| `EMBEDDING_MODEL` | text-embedding-3-small | OpenAI embedding model |
-| `CHAT_MODEL` | gpt-4o-mini | OpenAI chat model |
-| `VECTOR_STORE` | faiss | Vector store backend (faiss/chroma) |
-| `INDEX_DIR` | ./storage | Directory for storing vector indices |
-| `CHUNK_SIZE` | 1200 | Text chunk size in characters |
-| `CHUNK_OVERLAP` | 200 | Overlap between chunks |
-| `TOP_K` | 4 | Number of chunks to retrieve |
-| `MAX_TOKENS_ANSWER` | 600 | Maximum tokens for answers |
-| `TEMPERATURE` | 0.2 | Model temperature for responses |
+| Variable            | Default                | Description                          |
+| ------------------- | ---------------------- | ------------------------------------ |
+| `OPENAI_API_KEY`    | -                      | OpenAI API key (required)            |
+| `EMBEDDING_MODEL`   | text-embedding-3-small | OpenAI embedding model               |
+| `CHAT_MODEL`        | gpt-4o-mini            | OpenAI chat model                    |
+| `VECTOR_STORE`      | faiss                  | Vector store backend (faiss/chroma)  |
+| `INDEX_DIR`         | ./storage              | Directory for storing vector indices |
+| `CHUNK_SIZE`        | 1200                   | Text chunk size in characters        |
+| `CHUNK_OVERLAP`     | 200                    | Overlap between chunks               |
+| `TOP_K`             | 4                      | Number of chunks to retrieve         |
+| `MAX_TOKENS_ANSWER` | 600                    | Maximum tokens for answers           |
+| `TEMPERATURE`       | 0.2                    | Model temperature for responses      |
 
 ## Project Structure
 
@@ -153,12 +160,14 @@ python test_phase4.py  # Streamlit UI
 ### Core Functions
 
 #### Document Processing
+
 ```python
 from src.pdf_utils import process_pdf
 chunks, metadata = process_pdf("document.pdf")
 ```
 
 #### Vector Operations
+
 ```python
 from src.vectorstore import build_index, search
 build_index(chunk_texts)
@@ -166,6 +175,7 @@ results = search("query", k=5)
 ```
 
 #### RAG Pipeline
+
 ```python
 from src.rag import answer_query
 response = answer_query("What is this document about?")
@@ -176,21 +186,25 @@ response = answer_query("What is this document about?")
 ### Common Issues
 
 **Installation Problems**
+
 - Ensure Python 3.10+ is installed
 - Try upgrading pip: `pip install --upgrade pip`
 - Install dependencies one by one if batch install fails
 
 **API Key Issues**
+
 - Verify OpenAI API key is correctly set in `.env`
 - Check API key has sufficient credits
 - Ensure no extra spaces in the environment file
 
 **PDF Processing Errors**
+
 - Verify PDF is not password-protected
 - Ensure PDF contains extractable text (not scanned images)
 - Check file size is reasonable (< 50MB recommended)
 
 **Performance Issues**
+
 - Reduce `CHUNK_SIZE` for faster processing
 - Decrease `TOP_K` for quicker retrieval
 - Use FAISS instead of ChromaDB for better performance
