@@ -111,8 +111,14 @@ class FAISSVectorStore(BaseVectorStore):
         self.chunks = valid_chunks
         
         # Determine dimension from first embedding
-        self.dimension = self.embeddings.shape[1]
+        new_dimension = self.embeddings.shape[1]
         
+        # Check if we're changing dimensions (warn user)
+        if self.dimension is not None and self.dimension != new_dimension:
+            logger.warning(f"Dimension change detected: {self.dimension}d → {new_dimension}d. "
+                         f"Rebuilding index with new embedding provider.")
+        
+        self.dimension = new_dimension
         logger.info(f"Creating FAISS index with {len(valid_embeddings)} embeddings, dimension {self.dimension}")
         
         # Create FAISS index (inner product for cosine similarity)
@@ -154,6 +160,16 @@ class FAISSVectorStore(BaseVectorStore):
         query_embeddings = embed_texts([query])
         if not query_embeddings or not query_embeddings[0]:
             raise VectorStoreError("Failed to generate query embedding")
+        
+        # Check dimension compatibility
+        query_dim = len(query_embeddings[0])
+        if query_dim != self.dimension:
+            logger.error(f"Dimension mismatch: query embedding ({query_dim}d) vs index ({self.dimension}d)")
+            raise VectorStoreError(
+                f"Embedding dimension mismatch. Current provider generates {query_dim}d embeddings, "
+                f"but existing index expects {self.dimension}d. Please rebuild the index or switch "
+                f"to the original embedding provider."
+            )
         
         query_vector = np.array([query_embeddings[0]], dtype=np.float32)
         faiss.normalize_L2(query_vector)
