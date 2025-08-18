@@ -75,7 +75,7 @@ class FAISSVectorStore(BaseVectorStore):
         
         super().__init__(index_dir)
         self.index: Optional[faiss.Index] = None
-        self.dimension = 1536  # text-embedding-3-small dimension
+        self.dimension = None  # Will be determined dynamically from first embedding
         
     def build_index(self, chunks: List[str]) -> None:
         """
@@ -109,6 +109,9 @@ class FAISSVectorStore(BaseVectorStore):
         # Convert to numpy array
         self.embeddings = np.array(valid_embeddings, dtype=np.float32)
         self.chunks = valid_chunks
+        
+        # Determine dimension from first embedding
+        self.dimension = self.embeddings.shape[1]
         
         logger.info(f"Creating FAISS index with {len(valid_embeddings)} embeddings, dimension {self.dimension}")
         
@@ -212,12 +215,23 @@ class FAISSVectorStore(BaseVectorStore):
             index_path = self.index_dir / "faiss.index"
             chunks_path = self.index_dir / "chunks.pkl"
             embeddings_path = self.index_dir / "embeddings.npy"
+            metadata_path = self.index_dir / "metadata.json"
             
             if not all(p.exists() for p in [index_path, chunks_path, embeddings_path]):
                 logger.warning("FAISS index files not found")
                 return False
             
             logger.info(f"Loading FAISS index from {self.index_dir}")
+            
+            # Load metadata to get dimension
+            if metadata_path.exists():
+                with open(metadata_path, 'r') as f:
+                    metadata = json.load(f)
+                    self.dimension = metadata.get('dimension', 768)  # Default to Gemini dimension
+            else:
+                # Fallback: infer dimension from embeddings
+                embeddings = np.load(embeddings_path)
+                self.dimension = embeddings.shape[1]
             
             # Load FAISS index
             self.index = faiss.read_index(str(index_path))
@@ -229,7 +243,7 @@ class FAISSVectorStore(BaseVectorStore):
             # Load embeddings
             self.embeddings = np.load(embeddings_path)
             
-            logger.info(f"FAISS index loaded: {len(self.chunks)} chunks, {self.index.ntotal} vectors")
+            logger.info(f"FAISS index loaded: {len(self.chunks)} chunks, {self.index.ntotal} vectors, dimension {self.dimension}")
             return True
             
         except Exception as e:

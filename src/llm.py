@@ -1,4 +1,4 @@
-"""OpenAI API wrappers with retry logic for DocuChat."""
+"""Unified LLM interface for DocuChat with automatic provider selection."""
 
 import logging
 from typing import List
@@ -10,6 +10,56 @@ from .settings import settings
 
 # Configure logging
 logger = logging.getLogger(__name__)
+
+
+def _is_valid_api_key(api_key: str) -> bool:
+    """Check if an API key looks valid (not placeholder)."""
+    if not api_key or api_key.strip() == "":
+        return False
+    
+    # Check for placeholder values
+    placeholder_patterns = [
+        "your_",
+        "sk-your",
+        "sk-proj-your",
+        "sk-XXXX",
+        "replace_with",
+        "enter_your",
+        "add_your"
+    ]
+    
+    api_key_lower = api_key.lower()
+    for pattern in placeholder_patterns:
+        if pattern in api_key_lower:
+            return False
+    
+    return True
+
+
+def _get_available_provider() -> str:
+    """Determine which LLM provider to use based on available API keys."""
+    # Check Gemini first (prioritized)
+    if _is_valid_api_key(settings.gemini_api_key):
+        try:
+            from .llm_gemini import validate_api_key as validate_gemini
+            if validate_gemini():
+                logger.info("Using Gemini as LLM provider")
+                return "gemini"
+        except Exception as e:
+            logger.warning(f"Gemini validation failed: {e}")
+    
+    # Check OpenAI as fallback
+    if _is_valid_api_key(settings.openai_api_key):
+        try:
+            if validate_api_key():
+                logger.info("Using OpenAI as LLM provider")
+                return "openai"
+        except Exception as e:
+            logger.warning(f"OpenAI validation failed: {e}")
+    
+    # Fallback to mock
+    logger.warning("No valid LLM provider found, using mock responses")
+    return "mock"
 
 # Initialize OpenAI client
 def get_client():
@@ -32,6 +82,44 @@ class OpenAIError(Exception):
     pass
 
 
+def embed_texts(texts: List[str]) -> List[List[float]]:
+    """
+    Generate embeddings for a list of texts using the best available LLM provider.
+    
+    Args:
+        texts: List of text strings to embed
+        
+    Returns:
+        List of embedding vectors (list of floats)
+        
+    Raises:
+        Exception: If all providers fail
+    """
+    if not texts:
+        return []
+    
+    provider = _get_available_provider()
+    
+    try:
+        if provider == "gemini":
+            from .llm_gemini import embed_texts as gemini_embed_texts
+            return gemini_embed_texts(texts)
+        elif provider == "openai":
+            return _embed_texts_openai(texts)
+        else:  # mock
+            from .llm_mock import embed_texts as mock_embed_texts
+            return mock_embed_texts(texts)
+            
+    except Exception as e:
+        logger.error(f"{provider} embedding failed: {e}")
+        # Try fallback to mock if primary fails
+        if provider != "mock":
+            logger.warning("Falling back to mock embeddings")
+            from .llm_mock import embed_texts as mock_embed_texts
+            return mock_embed_texts(texts)
+        raise
+
+
 @retry(
     stop=stop_after_attempt(3),
     wait=wait_exponential(multiplier=1, min=2, max=10),
@@ -46,9 +134,9 @@ class OpenAIError(Exception):
         f"(attempt {retry_state.attempt_number})"
     )
 )
-def embed_texts(texts: List[str]) -> List[List[float]]:
+def _embed_texts_openai(texts: List[str]) -> List[List[float]]:
     """
-    Generate embeddings for a list of texts using OpenAI's embedding model.
+    Generate embeddings using OpenAI's embedding model.
     
     Args:
         texts: List of text strings to embed
@@ -83,18 +171,12 @@ def embed_texts(texts: List[str]) -> List[List[float]]:
             return direct_embed_texts(texts)
         except Exception as direct_error:
             logger.warning(f"Direct API failed: {direct_error}")
-            try:
-                # Try SDK client
-                client = get_client()
-                response = client.embeddings.create(
-                    input=non_empty_texts,
-                    model=settings.embedding_model
-                )
-            except Exception as sdk_error:
-                # Fallback to mock if both fail
-                logger.warning(f"SDK API also failed, using mock: {sdk_error}")
-                from .llm_mock import embed_texts as mock_embed_texts
-                return mock_embed_texts(texts)
+            # Try SDK client
+            client = get_client()
+            response = client.embeddings.create(
+                input=non_empty_texts,
+                model=settings.embedding_model
+            )
         
         # Extract embeddings and map back to original indices
         embeddings = [[] for _ in texts]
@@ -117,6 +199,57 @@ def embed_texts(texts: List[str]) -> List[List[float]]:
         raise OpenAIError(f"Failed to generate embeddings: {e}")
 
 
+def chat_complete(
+    system: str,
+    user: str,
+    *,
+    max_tokens: int = None,
+    temperature: float = None
+) -> str:
+    """
+    Generate a chat completion using the best available LLM provider.
+    
+    Args:
+        system: System message to set the context/behavior
+        user: User message/prompt
+        max_tokens: Maximum tokens in the response (optional, uses settings default)
+        temperature: Sampling temperature (optional, uses settings default)
+        
+    Returns:
+        Generated response text
+        
+    Raises:
+        Exception: If all providers fail
+    """
+    if not user.strip():
+        raise ValueError("User message cannot be empty")
+    
+    # Use defaults from settings if not provided
+    max_tokens = max_tokens or settings.max_tokens_answer
+    temperature = temperature if temperature is not None else settings.temperature
+    
+    provider = _get_available_provider()
+    
+    try:
+        if provider == "gemini":
+            from .llm_gemini import chat_complete as gemini_chat_complete
+            return gemini_chat_complete(system, user, max_tokens=max_tokens, temperature=temperature)
+        elif provider == "openai":
+            return _chat_complete_openai(system, user, max_tokens=max_tokens, temperature=temperature)
+        else:  # mock
+            from .llm_mock import chat_complete as mock_chat_complete
+            return mock_chat_complete(system, user, max_tokens=max_tokens, temperature=temperature)
+            
+    except Exception as e:
+        logger.error(f"{provider} chat completion failed: {e}")
+        # Try fallback to mock if primary fails
+        if provider != "mock":
+            logger.warning("Falling back to mock chat completion")
+            from .llm_mock import chat_complete as mock_chat_complete
+            return mock_chat_complete(system, user, max_tokens=max_tokens, temperature=temperature)
+        raise
+
+
 @retry(
     stop=stop_after_attempt(3),
     wait=wait_exponential(multiplier=1, min=2, max=10),
@@ -131,7 +264,7 @@ def embed_texts(texts: List[str]) -> List[List[float]]:
         f"(attempt {retry_state.attempt_number})"
     )
 )
-def chat_complete(
+def _chat_complete_openai(
     system: str,
     user: str,
     *,
@@ -174,20 +307,14 @@ def chat_complete(
             return direct_chat_complete(system, user, max_tokens=max_tokens, temperature=temperature)
         except Exception as direct_error:
             logger.warning(f"Direct API failed: {direct_error}")
-            try:
-                # Try SDK client
-                client = get_client()
-                response = client.chat.completions.create(
-                    model=settings.chat_model,
-                    messages=messages,
-                    max_tokens=max_tokens,
-                    temperature=temperature
-                )
-            except Exception as sdk_error:
-                # Fallback to mock if both fail
-                logger.warning(f"SDK API also failed, using mock: {sdk_error}")
-                from .llm_mock import chat_complete as mock_chat_complete
-                return mock_chat_complete(system, user, max_tokens=max_tokens, temperature=temperature)
+            # Try SDK client
+            client = get_client()
+            response = client.chat.completions.create(
+                model=settings.chat_model,
+                messages=messages,
+                max_tokens=max_tokens,
+                temperature=temperature
+            )
         
         answer = response.choices[0].message.content
         if not answer:
