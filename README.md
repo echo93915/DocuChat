@@ -40,13 +40,23 @@ The application implements a robust multi-tier fallback system for maximum relia
 
 This ensures the application continues to function even if individual AI services experience issues.
 
+### Unified LLM Architecture
+
+The application features a clean, unified LLM architecture that consolidates all AI providers into a single, well-organized module:
+
+- **Single Interface**: All LLM functionality accessible through one unified module
+- **Provider Classes**: Organized provider implementations (Gemini, OpenAI Direct, OpenAI SDK, Mock)
+- **Automatic Dimension Detection**: Vector store automatically adapts to different embedding dimensions (768 for Gemini, 1536 for OpenAI)
+- **Backward Compatibility**: Existing import paths continue to work seamlessly
+- **Maintainable**: Easier to understand, debug, and extend with new providers
+
 ### Technology Stack
 
 - **Backend**: Python 3.10+
 - **AI Models**:
   - **Primary**: Google Gemini 1.5 Flash (chat), text-embedding-004 (embeddings)
   - **Fallback**: OpenAI GPT-4o-mini (chat), text-embedding-3-small (embeddings)
-- **Vector Storage**: FAISS (default) or ChromaDB with automatic dimension detection
+- **Vector Storage**: FAISS (default) or ChromaDB with automatic embedding dimension detection
 - **PDF Processing**: pypdf
 - **Web Interface**: Streamlit
 - **Configuration**: Pydantic settings with environment variable support
@@ -176,10 +186,8 @@ DocuChat/
     ├── app_streamlit.py     # Streamlit web interface
     ├── settings.py          # Configuration management
     ├── types.py            # Data structures
-    ├── llm.py              # Multi-tier AI integration with fallback
-    ├── llm_gemini.py       # Google Gemini API integration
-    ├── llm_direct.py       # Direct OpenAI API integration
-    ├── llm_mock.py         # Mock implementation for testing
+    ├── llm.py              # Backward compatibility wrapper
+    ├── llm_unified.py      # Unified multi-provider LLM interface
     ├── pdf_utils.py        # PDF processing utilities
     ├── vectorstore.py      # Vector storage abstraction
     └── rag.py              # RAG pipeline implementation
@@ -232,6 +240,14 @@ from src.rag import answer_query
 response = answer_query("What is this document about?")
 ```
 
+#### LLM Operations
+
+```python
+from src.llm_unified import embed_texts, chat_complete
+embeddings = embed_texts(["sample text"])
+response = chat_complete("You are a helpful assistant", "Hello!")
+```
+
 ## Troubleshooting
 
 ### Common Issues
@@ -260,6 +276,12 @@ response = answer_query("What is this document about?")
 - Reduce `CHUNK_SIZE` for faster processing
 - Decrease `TOP_K` for quicker retrieval
 - Use FAISS instead of ChromaDB for better performance
+
+**Embedding Dimension Issues**
+
+- The system automatically detects embedding dimensions (768 for Gemini, 1536 for OpenAI)
+- If you encounter FAISS dimension errors, clear the storage directory: `rm -rf storage/*`
+- The vector store will rebuild with the correct dimensions for your current provider
 
 ## Contributing
 

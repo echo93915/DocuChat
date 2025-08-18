@@ -7,7 +7,7 @@ from datetime import datetime
 from .settings import settings
 from .types import DocumentChunk, QueryResponse, RetrievalResult
 from .vectorstore import get_vector_store
-from .llm import chat_complete  # Using real OpenAI API
+from .llm_unified import chat_complete  # Using unified LLM interface with fallback
 
 logger = logging.getLogger(__name__)
 
