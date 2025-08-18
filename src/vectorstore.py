@@ -75,7 +75,7 @@ class FAISSVectorStore(BaseVectorStore):
         
         super().__init__(index_dir)
         self.index: Optional[faiss.Index] = None
-        self.dimension = None  # Will be set based on first embeddings
+        self.dimension = 1536  # text-embedding-3-small dimension
         
     def build_index(self, chunks: List[str]) -> None:
         """
@@ -109,9 +109,6 @@ class FAISSVectorStore(BaseVectorStore):
         # Convert to numpy array
         self.embeddings = np.array(valid_embeddings, dtype=np.float32)
         self.chunks = valid_chunks
-        
-        # Set dimension based on actual embeddings
-        self.dimension = self.embeddings.shape[1]
         
         logger.info(f"Creating FAISS index with {len(valid_embeddings)} embeddings, dimension {self.dimension}")
         
