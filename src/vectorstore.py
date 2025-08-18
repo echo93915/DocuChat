@@ -242,13 +242,13 @@ class FAISSVectorStore(BaseVectorStore):
     def get_stats(self) -> IndexStats:
         """Get FAISS index statistics."""
         if self.index is None and not self.load_index():
-                    return IndexStats(
-            total_chunks=0,
-            index_size_mb=0.0,
-            embedding_dimension=self.dimension or 0,
-            vector_store_type="faiss",
-            last_updated=datetime.now()
-        )
+            return IndexStats(
+                total_chunks=0,
+                index_size_mb=0.0,
+                embedding_dimension=768,  # Default dimension for Gemini embeddings
+                vector_store_type="faiss",
+                last_updated=datetime.now()
+            )
         
         # Calculate index size
         index_size = 0
@@ -260,7 +260,7 @@ class FAISSVectorStore(BaseVectorStore):
         return IndexStats(
             total_chunks=len(self.chunks),
             index_size_mb=index_size / (1024 * 1024),
-            embedding_dimension=self.dimension or 0,
+            embedding_dimension=self.dimension or 768,  # Default to Gemini dimension
             vector_store_type="faiss",
             last_updated=datetime.now()
         )

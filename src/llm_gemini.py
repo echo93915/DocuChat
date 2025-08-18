@@ -15,10 +15,7 @@ from .settings import settings
 
 logger = logging.getLogger(__name__)
 
-# Gemini API configuration
-GEMINI_API_KEY = "AIzaSyBwstV9TVgSOSRcuW8-QjDOpgYMdLR7gCI"
-GEMINI_CHAT_MODEL = "gemini-1.5-flash"
-GEMINI_EMBEDDING_MODEL = "models/text-embedding-004"
+# Gemini API configuration will be loaded from settings
 
 
 class GeminiError(Exception):
@@ -31,7 +28,7 @@ def initialize_gemini():
     if not GEMINI_AVAILABLE:
         raise GeminiError("Google Generative AI package not available")
     
-    genai.configure(api_key=GEMINI_API_KEY)
+    genai.configure(api_key=settings.gemini_api_key)
     logger.info("Gemini API initialized")
 
 
@@ -82,7 +79,7 @@ def embed_texts(texts: List[str]) -> List[List[float]]:
         for i, text in enumerate(non_empty_texts):
             try:
                 result = genai.embed_content(
-                    model=GEMINI_EMBEDDING_MODEL,
+                    model=settings.gemini_embedding_model,
                     content=text,
                     task_type="retrieval_document"
                 )
@@ -151,7 +148,7 @@ def chat_complete(
         )
         
         model = genai.GenerativeModel(
-            model_name=GEMINI_CHAT_MODEL,
+            model_name=settings.gemini_chat_model,
             generation_config=generation_config
         )
         
