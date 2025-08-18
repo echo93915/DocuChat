@@ -78,23 +78,29 @@ def embed_texts(texts: List[str]) -> List[List[float]]:
         logger.info(f"Generating embeddings for {len(non_empty_texts)} texts using {settings.embedding_model}")
         
         try:
-            # Try direct API first
-            from .llm_direct import embed_texts as direct_embed_texts
-            return direct_embed_texts(texts)
-        except Exception as direct_error:
-            logger.warning(f"Direct API failed: {direct_error}")
+            # Try Gemini API first
+            from .llm_gemini import embed_texts as gemini_embed_texts
+            return gemini_embed_texts(texts)
+        except Exception as gemini_error:
+            logger.warning(f"Gemini API failed: {gemini_error}")
             try:
-                # Try SDK client
-                client = get_client()
-                response = client.embeddings.create(
-                    input=non_empty_texts,
-                    model=settings.embedding_model
-                )
-            except Exception as sdk_error:
-                # Fallback to mock if both fail
-                logger.warning(f"SDK API also failed, using mock: {sdk_error}")
-                from .llm_mock import embed_texts as mock_embed_texts
-                return mock_embed_texts(texts)
+                # Try direct OpenAI API
+                from .llm_direct import embed_texts as direct_embed_texts
+                return direct_embed_texts(texts)
+            except Exception as direct_error:
+                logger.warning(f"Direct OpenAI API failed: {direct_error}")
+                try:
+                    # Try OpenAI SDK client
+                    client = get_client()
+                    response = client.embeddings.create(
+                        input=non_empty_texts,
+                        model=settings.embedding_model
+                    )
+                except Exception as sdk_error:
+                    # Fallback to mock if all fail
+                    logger.warning(f"All APIs failed, using mock: {sdk_error}")
+                    from .llm_mock import embed_texts as mock_embed_texts
+                    return mock_embed_texts(texts)
         
         # Extract embeddings and map back to original indices
         embeddings = [[] for _ in texts]
@@ -169,25 +175,31 @@ def chat_complete(
         messages.append({"role": "user", "content": user.strip()})
         
         try:
-            # Try direct API first
-            from .llm_direct import chat_complete as direct_chat_complete
-            return direct_chat_complete(system, user, max_tokens=max_tokens, temperature=temperature)
-        except Exception as direct_error:
-            logger.warning(f"Direct API failed: {direct_error}")
+            # Try Gemini API first
+            from .llm_gemini import chat_complete as gemini_chat_complete
+            return gemini_chat_complete(system, user, max_tokens=max_tokens, temperature=temperature)
+        except Exception as gemini_error:
+            logger.warning(f"Gemini API failed: {gemini_error}")
             try:
-                # Try SDK client
-                client = get_client()
-                response = client.chat.completions.create(
-                    model=settings.chat_model,
-                    messages=messages,
-                    max_tokens=max_tokens,
-                    temperature=temperature
-                )
-            except Exception as sdk_error:
-                # Fallback to mock if both fail
-                logger.warning(f"SDK API also failed, using mock: {sdk_error}")
-                from .llm_mock import chat_complete as mock_chat_complete
-                return mock_chat_complete(system, user, max_tokens=max_tokens, temperature=temperature)
+                # Try direct OpenAI API
+                from .llm_direct import chat_complete as direct_chat_complete
+                return direct_chat_complete(system, user, max_tokens=max_tokens, temperature=temperature)
+            except Exception as direct_error:
+                logger.warning(f"Direct OpenAI API failed: {direct_error}")
+                try:
+                    # Try OpenAI SDK client
+                    client = get_client()
+                    response = client.chat.completions.create(
+                        model=settings.chat_model,
+                        messages=messages,
+                        max_tokens=max_tokens,
+                        temperature=temperature
+                    )
+                except Exception as sdk_error:
+                    # Fallback to mock if all fail
+                    logger.warning(f"All APIs failed, using mock: {sdk_error}")
+                    from .llm_mock import chat_complete as mock_chat_complete
+                    return mock_chat_complete(system, user, max_tokens=max_tokens, temperature=temperature)
         
         answer = response.choices[0].message.content
         if not answer:
