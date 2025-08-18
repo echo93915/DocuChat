@@ -1,0 +1,219 @@
+# DocuChat - PDF Q&A with RAG
+
+A modern web application that enables users to upload PDF documents and ask natural language questions about their content. Built with Retrieval-Augmented Generation (RAG) technology for accurate, context-aware responses.
+
+## Features
+
+- **PDF Document Upload**: Support for PDF file processing with validation
+- **Intelligent Text Processing**: Advanced text extraction and chunking for optimal retrieval
+- **Semantic Search**: Vector-based similarity search using FAISS or ChromaDB
+- **AI-Powered Answers**: OpenAI GPT models provide accurate, contextual responses
+- **Source Attribution**: All answers include references to relevant document sections
+- **Interactive Web Interface**: Modern Streamlit-based UI with real-time feedback
+- **Chat History**: Persistent conversation history with timestamps
+- **Performance Metrics**: Processing time and retrieval statistics
+
+## Architecture
+
+### RAG Pipeline
+```
+PDF Upload → Text Extraction → Chunking → Embeddings → Vector Storage
+     ↓
+User Query → Embedding → Similarity Search → Context Retrieval → Answer Generation
+```
+
+### Technology Stack
+
+- **Backend**: Python 3.10+
+- **AI Models**: OpenAI GPT-4o-mini (chat), text-embedding-3-small (embeddings)
+- **Vector Storage**: FAISS (default) or ChromaDB
+- **PDF Processing**: pypdf
+- **Web Interface**: Streamlit
+- **Configuration**: Pydantic settings with environment variable support
+
+## Installation
+
+### Prerequisites
+
+- Python 3.10 or higher
+- OpenAI API key
+
+### Setup
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/echo93915/DocuChat.git
+   cd DocuChat
+   ```
+
+2. **Create and activate virtual environment**
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   ```
+
+3. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Configure environment**
+   ```bash
+   cp .env.example .env
+   ```
+   
+   Edit `.env` and add your OpenAI API key:
+   ```
+   OPENAI_API_KEY=your_openai_api_key_here
+   ```
+
+## Usage
+
+### Running the Application
+
+Start the Streamlit web interface:
+```bash
+streamlit run run_app.py
+```
+
+The application will be available at `http://localhost:8501`
+
+### Using the Interface
+
+1. **Upload Document**: Use the file uploader to select a PDF document
+2. **Process Document**: Click "Ingest Document" to extract and index the content
+3. **Ask Questions**: Enter questions about the document content
+4. **Review Answers**: View AI-generated responses with source citations
+5. **Explore History**: Review previous questions and answers in the chat history
+
+## Configuration
+
+The application can be configured through environment variables:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `OPENAI_API_KEY` | - | OpenAI API key (required) |
+| `EMBEDDING_MODEL` | text-embedding-3-small | OpenAI embedding model |
+| `CHAT_MODEL` | gpt-4o-mini | OpenAI chat model |
+| `VECTOR_STORE` | faiss | Vector store backend (faiss/chroma) |
+| `INDEX_DIR` | ./storage | Directory for storing vector indices |
+| `CHUNK_SIZE` | 1200 | Text chunk size in characters |
+| `CHUNK_OVERLAP` | 200 | Overlap between chunks |
+| `TOP_K` | 4 | Number of chunks to retrieve |
+| `MAX_TOKENS_ANSWER` | 600 | Maximum tokens for answers |
+| `TEMPERATURE` | 0.2 | Model temperature for responses |
+
+## Project Structure
+
+```
+DocuChat/
+├── README.md                 # Project documentation
+├── requirements.txt          # Python dependencies
+├── .env.example             # Environment template
+├── run_app.py               # Application entry point
+├── TODO.md                  # Development roadmap
+├── data/                    # Sample documents
+│   └── sample.pdf
+├── storage/                 # Vector indices and metadata
+└── src/                     # Source code
+    ├── __init__.py
+    ├── app_streamlit.py     # Streamlit web interface
+    ├── settings.py          # Configuration management
+    ├── types.py            # Data structures
+    ├── llm.py              # OpenAI API integration
+    ├── llm_mock.py         # Mock implementation for testing
+    ├── pdf_utils.py        # PDF processing utilities
+    ├── vectorstore.py      # Vector storage abstraction
+    └── rag.py              # RAG pipeline implementation
+```
+
+## Development
+
+### Testing
+
+The project includes comprehensive test suites for each component:
+
+```bash
+# Test individual phases
+python test_phase1.py  # Core infrastructure
+python test_phase2.py  # Document processing
+python test_phase3.py  # RAG system
+python test_phase4.py  # Streamlit UI
+```
+
+### Code Quality
+
+- Type hints throughout the codebase
+- Comprehensive error handling
+- Modular, extensible architecture
+- Detailed logging and monitoring
+
+## API Reference
+
+### Core Functions
+
+#### Document Processing
+```python
+from src.pdf_utils import process_pdf
+chunks, metadata = process_pdf("document.pdf")
+```
+
+#### Vector Operations
+```python
+from src.vectorstore import build_index, search
+build_index(chunk_texts)
+results = search("query", k=5)
+```
+
+#### RAG Pipeline
+```python
+from src.rag import answer_query
+response = answer_query("What is this document about?")
+```
+
+## Troubleshooting
+
+### Common Issues
+
+**Installation Problems**
+- Ensure Python 3.10+ is installed
+- Try upgrading pip: `pip install --upgrade pip`
+- Install dependencies one by one if batch install fails
+
+**API Key Issues**
+- Verify OpenAI API key is correctly set in `.env`
+- Check API key has sufficient credits
+- Ensure no extra spaces in the environment file
+
+**PDF Processing Errors**
+- Verify PDF is not password-protected
+- Ensure PDF contains extractable text (not scanned images)
+- Check file size is reasonable (< 50MB recommended)
+
+**Performance Issues**
+- Reduce `CHUNK_SIZE` for faster processing
+- Decrease `TOP_K` for quicker retrieval
+- Use FAISS instead of ChromaDB for better performance
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
+
+## License
+
+This project is available under the MIT License. See LICENSE file for details.
+
+## Acknowledgments
+
+- OpenAI for providing the GPT and embedding models
+- FAISS team for the efficient vector search library
+- Streamlit for the excellent web framework
+- pypdf contributors for PDF processing capabilities
+
+## Support
+
+For questions, issues, or contributions, please visit the [GitHub repository](https://github.com/echo93915/DocuChat) or open an issue.
