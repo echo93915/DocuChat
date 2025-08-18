@@ -85,70 +85,13 @@ streamlit run run_app.py
 
 The application will be available at `http://localhost:8501`
 
-### Using the Streamlit Interface
+### Using the Interface
 
-Once the application is running at `http://localhost:8501`, you'll see the DocuChat web interface:
-
-#### Step-by-Step Guide
-
-1. **Upload Document**
-   - Use the file uploader in the left column to select a PDF document
-   - Supported file types: PDF files only
-   - File size recommendation: Under 50MB for optimal performance
-   - The interface will display file information once uploaded
-
-2. **Process Document**
-   - Click the "Ingest Document" button after uploading
-   - Wait for the processing to complete (progress indicators will show)
-   - You'll see a success message with the number of chunks created
-   - The sidebar will update with document statistics
-
-3. **Ask Questions**
-   - Use the suggested questions for quick start
-   - Or enter your own questions in the text input field
-   - Click "Ask" to submit your question
-   - Questions should be specific and related to the document content
-
-4. **Review Answers**
-   - View AI-generated responses in the chat area
-   - Each answer includes processing time and source count
-   - Click "View Sources" to see the retrieved document snippets
-   - Source snippets show exactly where information was found
-
-5. **Explore Features**
-   - **Chat History**: Scroll down to see all previous questions and answers
-   - **Sidebar Stats**: Monitor system performance and document metrics
-   - **Quick Actions**: Use sidebar buttons to clear history or reset the app
-
-#### Interface Layout
-
-**Left Column (Upload & Process)**
-- File uploader with drag-and-drop support
-- Document processing controls
-- Status messages and progress indicators
-
-**Right Column (Q&A Interface)**
-- Suggested questions based on document content
-- Custom question input field
-- Real-time answer generation
-
-**Full Width (Chat History)**
-- Complete conversation history
-- Expandable source citations
-- Processing metrics for each interaction
-
-**Sidebar (System Information)**
-- Current configuration settings
-- Document metadata and statistics
-- Vector index information
-- Quick action buttons
-
-#### Tips for Best Results
-
-- **Question Quality**: Ask specific, focused questions about the document
-- **Document Preparation**: Ensure PDFs contain searchable text (not scanned images)
-- **Processing Time**: Larger documents take longer to process initially
-- **Multiple Questions**: Feel free to ask follow-up questions for clarification
+1. **Upload Document**: Use the file uploader to select a PDF document
+2. **Process Document**: Click "Ingest Document" to extract and index the content
+3. **Ask Questions**: Enter questions about the document content
+4. **Review Answers**: View AI-generated responses with source citations
+5. **Explore History**: Review previous questions and answers in the chat history
 
 ## Configuration
 
