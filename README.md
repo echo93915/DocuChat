@@ -1,14 +1,13 @@
 # DocuChat - PDF Q&A with RAG
 
-A modern web application that enables users to upload PDF documents and ask natural language questions about their content. Built with Retrieval-Augmented Generation (RAG) technology for accurate, context-aware responses with multi-tier AI fallback system.
+A modern web application that enables users to upload PDF documents and ask natural language questions about their content. Built with Retrieval-Augmented Generation (RAG) technology for accurate, context-aware responses.
 
 ## Features
 
 - **PDF Document Upload**: Support for PDF file processing with validation
 - **Intelligent Text Processing**: Advanced text extraction and chunking for optimal retrieval
 - **Semantic Search**: Vector-based similarity search using FAISS or ChromaDB
-- **Multi-Tier AI System**: Google Gemini (primary) with OpenAI GPT fallback for robust responses
-- **Intelligent Fallback**: Automatic failover between Gemini → OpenAI Direct → OpenAI SDK → Mock
+- **Multi-Provider AI Support**: Google Gemini (primary) with OpenAI GPT fallback for robust responses
 - **Source Attribution**: All answers include references to relevant document sections
 - **Interactive Web Interface**: Modern Streamlit-based UI with real-time feedback
 - **Chat History**: Persistent conversation history with timestamps
@@ -23,22 +22,6 @@ PDF Upload → Text Extraction → Chunking → Embeddings → Vector Storage
      ↓
 User Query → Embedding → Similarity Search → Context Retrieval → Answer Generation
 ```
-
-### AI Fallback System
-
-The application implements a robust multi-tier fallback system for maximum reliability:
-
-```
-1. Google Gemini (Primary)
-   ↓ (if fails)
-2. OpenAI Direct API
-   ↓ (if fails)
-3. OpenAI SDK Client
-   ↓ (if fails)
-4. Mock Response (for testing)
-```
-
-This ensures the application continues to function even if individual AI services experience issues.
 
 ### Technology Stack
 
