@@ -25,9 +25,12 @@ Thumbs.db
 
 # Storage and data
 storage/
+data/
 *.index
 *.pkl
 *.npy
+*.pdf
+*.PDF
 
 # Logs
 *.log
